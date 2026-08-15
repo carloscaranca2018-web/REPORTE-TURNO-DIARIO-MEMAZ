@@ -376,6 +376,13 @@
 let opCount = 0;
 let leyCount = 0;
 
+function formatearFecha(fecha){
+  if(!fecha) return '';
+  const partes = fecha.split('-');
+  if(partes.length !== 3) return fecha;
+  return `${partes[2]}-${partes[1]}-${partes[0]}`;
+}
+
 function agregarOperatividad(valores){
   opCount++;
   const id = 'op'+opCount;
@@ -465,7 +472,7 @@ function guardarDia(){
 
 function renderReport(data){
   document.getElementById('r_titulo').textContent = (data.unidad || 'MEMAZ') + ' — Resumen de Turno';
-  document.getElementById('r_fechaTurno').textContent = (data.turno || 'Turno') + ' — ' + data.fecha;
+  document.getElementById('r_fechaTurno').textContent = (data.turno || 'Turno') + ' — ' + formatearFecha(data.fecha);
 
   const opList = document.getElementById('r_opList');
   opList.innerHTML = '';
@@ -522,7 +529,7 @@ function cargarHistorial(){
       const fecha = k.replace('turno:','');
       const row = document.createElement('div');
       row.className = 'hist-item';
-      row.innerHTML = `<span data-fecha="${fecha}">${fecha}</span><span class="del" data-del="${fecha}">✕</span>`;
+      row.innerHTML = `<span data-fecha="${fecha}">${formatearFecha(fecha)}</span><span class="del" data-del="${fecha}">✕</span>`;
       listEl.appendChild(row);
     }
     listEl.querySelectorAll('[data-fecha]').forEach(el=>{
@@ -561,7 +568,7 @@ function cargarDia(fecha){
 }
 
 function borrarDia(fecha){
-  if(!confirm('¿Borrar el resumen de '+fecha+'?')) return;
+  if(!confirm('¿Borrar el resumen de '+formatearFecha(fecha)+'?')) return;
   try{
     localStorage.removeItem('turno:'+fecha);
     cargarHistorial();
@@ -576,7 +583,8 @@ function descargarImagen(){
   const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   html2canvas(el,{backgroundColor:'#0E3A5E',scale:esIOS?2:3,useCORS:true}).then(canvas=>{
     canvas.toBlob(async blob=>{
-      const nombreArchivo='resumen_turno_'+(document.getElementById('fecha').value||'sinfecha')+'.png';
+      const fechaArchivo = formatearFecha(document.getElementById('fecha').value||'sinfecha');
+      const nombreArchivo='resumen_turno_'+fechaArchivo+'.png';
       if(esIOS && navigator.share){
         try{ const file=new File([blob],nombreArchivo,{type:'image/png'}); if(!navigator.canShare || navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:'Resumen de turno'}); mostrarFeedback('✅ Imagen lista para guardar o enviar.'); return; } }
         catch(err){ if(err && err.name==='AbortError') return; console.warn('Compartir nativo no disponible:',err); }
@@ -596,7 +604,7 @@ function descargarImagen(){
 
 function copiarWhatsapp(){
   const turno = document.getElementById('turno').value || 'Turno';
-  const fecha = document.getElementById('fecha').value || '';
+  const fecha = formatearFecha(document.getElementById('fecha').value || '');
   const unidad = document.getElementById('unidad').value || 'MEMAZ';
 
   const opTexto = Array.from(document.querySelectorAll('#opList .dyn-item')).map((item,i)=>{
@@ -626,7 +634,7 @@ function copiarWhatsapp(){
   const supervisor = document.getElementById('supervisor').value || '';
 
   const texto =
-`Dios y patria mi Coronel buenas noches respetuosamente envío resumen de ${turno} ${fecha} ${unidad}:
+`Dios y patria mi Coronel buen dia respetuosamente envío resumen de ${turno} ${fecha} ${unidad}:
 🟨_*OPERATIVIDAD*_
 ${opTexto}
 🟧_*APLICACIÓN LEY 1801*_

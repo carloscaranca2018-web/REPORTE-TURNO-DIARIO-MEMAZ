@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Resumen de Turno - Policía Nacional</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --verde:#0A2F4F;
+    --verde-oscuro:#062038;
+    --dorado:#C9A227;
+    --dorado-claro:#E9C558;
+    --card:#0E3A5E;
+    --text:#F5F3EA;
+    --muted:#B7C4D6;
+    --line:#1B4E73;
+    --danger:#D9534F;
+    --azul:#1B4F72;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    -webkit-text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;
+    background:#061A13;
+    font-family:'Segoe UI', system-ui, sans-serif;
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 12px 60px;
+  }
+  h2.page-title{ font-size:16px; color:var(--muted); margin:0 0 16px; font-weight:600; text-align:center; }
+
+  button,input,select,textarea{ -webkit-appearance:none; appearance:none; }
+  button{ touch-action:manipulation; }
+  input,select,textarea{ -webkit-user-select:text; user-select:text; }
+  #layout{ display:flex; gap:24px; flex-wrap:wrap; justify-content:center; align-items:flex-start; }
+
+  /* --- FORM --- */
+  #form{
+    width:390px;
+    background:#0C2A20;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+  }
+  #form h3{ margin:0 0 14px; font-size:14px; color:var(--dorado-claro); text-transform:uppercase; letter-spacing:1px; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
+  .field input, .field select, .field textarea{
+    width:100%;
+    background:#08201A;
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:15px;
+    font-family:inherit;
+  }
+  .field input:disabled{ opacity:0.75; }
+  .field textarea{ resize:vertical; min-height:36px; }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline:1px solid var(--dorado); }
+
+  .row2{ display:flex; gap:8px; }
+  .row2 .field{ flex:1; }
+
+  fieldset{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:14px;
+  }
+  legend{ font-size:13px; color:var(--dorado-claro); padding:0 6px; text-transform:uppercase; letter-spacing:1px; }
+
+  .dyn-item{
+    background:#08201A;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    position:relative;
+  }
+  .dyn-item .remove{
+    border:0;
+    background:transparent;
+    padding:8px;
+    position:absolute;
+    top:6px;
+    right:8px;
+    color:var(--danger);
+    cursor:pointer;
+    font-size:13px;
+  }
+  .add-btn{
+    width:100%;
+    background:transparent;
+    border:1px dashed var(--dorado);
+    color:var(--dorado-claro);
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+    margin-top:2px;
+  }
+
+  #form button.save{
+    width:100%;
+    background:var(--dorado);
+    color:#0C2A20;
+    border:none;
+    padding:11px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+    font-size:14px;
+    margin-top:6px;
+  }
+
+  #history{ margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+  #history h4{ font-size:12px; color:var(--muted); margin:0 0 8px; text-transform:uppercase; }
+  .hist-item{ display:flex; justify-content:space-between; font-size:14px; padding:6px 0; cursor:pointer; border-bottom:1px solid var(--line); }
+  .hist-item:hover{ color:var(--dorado-claro); }
+  .hist-item .del{ color:var(--danger); font-size:12px; }
+
+  /* --- REPORT CARD --- */
+  #reportWrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  #toolbar{ display:flex; gap:10px; }
+  button.action{
+    background:var(--dorado);
+    color:#0C2A20;
+    border:none;
+    padding:10px 16px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+    font-size:13px;
+  }
+  button.action.secondary{ background:transparent; color:var(--dorado-claro); border:1px solid var(--dorado); }
+
+  #report{
+    width:440px;
+    background:var(--card);
+    border:5px solid var(--dorado);
+    border-radius:10px;
+    overflow:hidden;
+    padding:4px;
+  }
+  .rep-topbar{
+    background:var(--verde-oscuro);
+    padding:14px 18px;
+    text-align:center;
+    border-bottom:3px solid var(--dorado);
+  }
+  .rep-topbar .escudo{
+    font-size:28px;
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .rep-topbar .institucion{
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:var(--dorado-claro);
+    text-transform:uppercase;
+  }
+  .rep-topbar .lema{
+    font-size:10px;
+    color:var(--muted);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-top:2px;
+  }
+
+  .rep-body{ padding:26px; }
+
+  .rep-header{ text-align:center; margin-bottom:20px; }
+  .rep-header h1{ font-size:20px; margin:0 0 5px; color:var(--text); }
+  .rep-header .sub{ font-size:14px; color:var(--dorado-claro); font-weight:700; }
+
+  .swatch{
+    width:13px;
+    height:13px;
+    border-radius:3px;
+    display:inline-block;
+    flex-shrink:0;
+  }
+
+  .section-title{
+    font-size:13.5px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin:22px 0 12px;
+    padding:8px 10px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-title.op{ background:#4a3f0f; color:var(--dorado-claro); }
+  .section-title.op .swatch{ background:#F2C94C; }
+  .section-title.ley{ background:#4a2f14; color:#F2A24E; }
+  .section-title.ley .swatch{ background:#F2994A; }
+  .section-title.reg{ background:var(--azul); color:#AED6F1; }
+  .section-title.reg .swatch{ background:#56CCF2; }
+
+  .op-item{
+    font-size:14.5px;
+    line-height:1.7;
+    margin-bottom:14px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .op-item:last-child{ border-bottom:none; }
+  .op-item b{ color:var(--dorado-claro); }
+  .op-item b.novedad-rojo{ color:var(--danger) !important; }
+  .op-item .campo{ color:var(--muted); }
+
+  .ley-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px; padding:7px 0; }
+  .ley-row .swatch{ background:#27AE60; margin-right:2px; }
+  .ley-total{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:2px solid var(--dorado);
+    font-weight:800;
+    font-size:15.5px;
+    color:var(--dorado-claro);
+    text-align:center;
+  }
+
+  .reg-row{ display:flex; justify-content:space-between; font-size:15px; padding:7px 0; }
+
+  .footer-sign{
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    text-align:center;
+    font-size:15px;
+  }
+  .footer-sign .nombre{ font-weight:800; color:var(--text); font-size:16px; }
+  .footer-sign .cargo{ color:var(--dorado-claro); font-size:13px; margin-top:3px; text-transform:uppercase; letter-spacing:0.5px; font-weight:800; }
+  #copyFeedback{ font-size:14px; color:var(--dorado-claro); min-height:16px; }
+
+  @media (max-width: 760px){
+    body{padding:12px 8px 40px;}
+    #layout{width:100%;display:block;}
+    #form{width:min(100%,420px);margin:0 auto;}
+    #reportWrap{margin-top:18px;width:100%;overflow:hidden;}
+    #toolbar{width:min(100%,420px);display:grid;grid-template-columns:1fr 1fr;margin:0 auto;}
+    button.action{min-height:46px;font-size:14px;}
+    .row2{flex-direction:column;gap:0;}
+    .field input,.field select,.field textarea{font-size:16px;min-height:42px;}
+    .add-btn,#form button.save{min-height:44px;}
+    #report{
+      width:440px;
+      transform-origin:top center;
+      margin-left:auto;
+      margin-right:auto;
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<h2 class="page-title">Resumen de turno — Policía Nacional de Colombia</h2>
+
+<div id="layout">
+
+  <div id="form">
+    <h3>Datos del turno</h3>
+
+    <div class="row2">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="field">
+        <label>Turno</label>
+        <select id="turno">
+          <option value="Primer Turno">Primer Turno</option>
+          <option value="Segundo Turno">Segundo Turno</option>
+          <option value="Tercer Turno" selected>Tercer Turno</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Unidad / Grupo</label>
+      <input type="text" id="unidad" value="MEMAZ">
+    </div>
+
+    <fieldset>
+      <legend>🟨 Operatividad</legend>
+      <div id="opList"></div>
+      <button type="button" class="add-btn" onclick="agregarOperatividad()">+ Agregar motivo de policía</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>🟧 Aplicación Ley 1801</legend>
+      <div id="leyList"></div>
+      <button type="button" class="add-btn" onclick="agregarLey()">+ Agregar artículo</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>🟦 Registros</legend>
+      <div class="row2">
+        <div class="field">
+          <label>Motivos atendidos SECAD</label>
+          <input type="number" id="secad" placeholder="153">
+        </div>
+        <div class="field">
+          <label>Mediación policial</label>
+          <input type="number" id="mediacion" placeholder="02">
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label>Nombre del supervisor</label>
+      <input type="text" id="supervisor" placeholder="ST. DARCY CONTRERAS">
+    </div>
+    <div class="field">
+      <label>Cargo</label>
+      <input type="text" id="cargo" value="SUPERVISOR DEL SERVICIO" disabled>
+    </div>
+
+    <button class="save" onclick="guardarDia()">💾 Guardar resumen</button>
+
+    <div id="history">
+      <h4>Resúmenes guardados</h4>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div id="reportWrap">
+    <div id="toolbar">
+      <button class="action" onclick="descargarImagen()">📷 Imagen</button>
+      <button class="action secondary" onclick="copiarWhatsapp()">💬 WhatsApp</button>
+    </div>
+
+    <div id="report">
+      <div class="rep-body">
+        <div class="rep-header">
+          <h1 id="r_titulo">MEMAZ — Resumen de Turno</h1>
+          <div class="sub" id="r_fechaTurno">Sin datos aún</div>
+        </div>
+
+        <div class="section-title op"><span class="swatch"></span> Operatividad</div>
+        <div id="r_opList"></div>
+
+        <div class="section-title ley"><span class="swatch"></span> Aplicación Ley 1801</div>
+        <div id="r_leyList"></div>
+        <div class="ley-total" id="r_leyTotal">Total 0 aplicaciones ley 1801</div>
+
+        <div class="section-title reg"><span class="swatch"></span> Registros</div>
+        <div class="reg-row"><span>Motivos atendidos SECAD</span><span id="r_secad">–</span></div>
+        <div class="reg-row"><span>Mediación policial</span><span id="r_mediacion">–</span></div>
+
+        <div class="footer-sign">
+          <div class="nombre" id="r_supervisor">—</div>
+          <div class="cargo" id="r_cargo">SUPERVISOR DEL SERVICIO</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="copyFeedback"></div>
+  </div>
+
+</div>
+
+<script>
+let opCount = 0;
+let leyCount = 0;
+
+function agregarOperatividad(valores){
+  opCount++;
+  const id = 'op'+opCount;
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove" aria-label="Eliminar motivo" onclick="document.getElementById('${id}').remove()">✕</button>
+    <div class="row2">
+      <div class="field"><label>Hora</label><input type="text" class="op-hora" placeholder="14:38 horas"></div>
+    </div>
+    <div class="field"><label>Hecho</label><input type="text" class="op-hecho" placeholder="Captura, Incautacion, Recuperacion o Novedad"></div>
+    <div class="row2">
+      <div class="field"><label>CAI</label><input type="text" class="op-cai" placeholder="Galán"></div>
+      <div class="field"><label>Patrulla</label><input type="text" class="op-patrulla" placeholder="7"></div>
+    </div>
+    <div class="field"><label>Funcionarios</label><input type="text" class="op-funcionarios" placeholder="IT. José Pedraza y SI. Juan Contreras"></div>
+  `;
+  document.getElementById('opList').appendChild(div);
+  if(valores){
+    div.querySelector('.op-hora').value = valores.hora || '';
+    div.querySelector('.op-hecho').value = valores.hecho || '';
+    div.querySelector('.op-cai').value = valores.cai || '';
+    div.querySelector('.op-patrulla').value = valores.patrulla || '';
+    div.querySelector('.op-funcionarios').value = valores.funcionarios || '';
+  }
+}
+
+function agregarLey(valores){
+  leyCount++;
+  const id = 'ley'+leyCount;
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove" aria-label="Eliminar motivo" onclick="document.getElementById('${id}').remove()">✕</button>
+    <div class="row2">
+      <div class="field"><label>Artículo</label><input type="text" class="ley-articulo" placeholder="27#6"></div>
+      <div class="field"><label>Cantidad</label><input type="number" class="ley-cantidad" placeholder="11"></div>
+    </div>
+  `;
+  document.getElementById('leyList').appendChild(div);
+  if(valores){
+    div.querySelector('.ley-articulo').value = valores.articulo || '';
+    div.querySelector('.ley-cantidad').value = valores.cantidad || '';
+  }
+}
+
+function guardarDia(){
+  const fecha = document.getElementById('fecha').value;
+  if(!fecha){ alert('Elige una fecha'); return; }
+
+  const operatividad = Array.from(document.querySelectorAll('#opList .dyn-item')).map(item=>({
+    hora: item.querySelector('.op-hora').value,
+    hecho: item.querySelector('.op-hecho').value,
+    cai: item.querySelector('.op-cai').value,
+    patrulla: item.querySelector('.op-patrulla').value,
+    funcionarios: item.querySelector('.op-funcionarios').value
+  }));
+
+  const ley1801 = Array.from(document.querySelectorAll('#leyList .dyn-item')).map(item=>({
+    articulo: item.querySelector('.ley-articulo').value,
+    cantidad: item.querySelector('.ley-cantidad').value
+  }));
+
+  const data = {
+    fecha,
+    turno: document.getElementById('turno').value,
+    unidad: document.getElementById('unidad').value,
+    operatividad,
+    ley1801,
+    secad: document.getElementById('secad').value,
+    mediacion: document.getElementById('mediacion').value,
+    supervisor: document.getElementById('supervisor').value,
+    cargo: 'SUPERVISOR DEL SERVICIO'
+  };
+
+  try{
+    localStorage.setItem('turno:'+fecha, JSON.stringify(data));
+    renderReport(data);
+    cargarHistorial();
+  }catch(e){
+    console.error('Error guardando:', e);
+    alert('No se pudo guardar. Intenta de nuevo.');
+  }
+}
+
+function renderReport(data){
+  document.getElementById('r_titulo').textContent = (data.unidad || 'MEMAZ') + ' — Resumen de Turno';
+  document.getElementById('r_fechaTurno').textContent = (data.turno || 'Turno') + ' — ' + data.fecha;
+
+  const opList = document.getElementById('r_opList');
+  opList.innerHTML = '';
+  data.operatividad.forEach((op,i)=>{
+    const el = document.createElement('div');
+    el.className = 'op-item';
+    const partes = [];
+    if(op.cai) partes.push('CAI '+op.cai);
+    if(op.patrulla) partes.push('Patrulla '+op.patrulla);
+    if(op.funcionarios) partes.push('Funcionarios: '+op.funcionarios);
+    const detalleTexto = partes.join(', ');
+    
+    // Normalizar texto para verificar "novedad" o "novedades"
+    const hechoTexto = (op.hecho || '').trim();
+    const hechoLower = hechoTexto.toLowerCase();
+    const esNovedad = hechoLower === 'novedad' || hechoLower === 'novedades';
+    const claseHecho = esNovedad ? 'class="novedad-rojo"' : '';
+
+    el.innerHTML = `<b>${i+1}. ${op.hora}</b> — <b ${claseHecho}>${op.hecho}</b><br><span class="campo">Conoce motivo de policía:</span> ${detalleTexto}`;
+    opList.appendChild(el);
+  });
+  if(data.operatividad.length===0) opList.innerHTML = '<div class="op-item">Sin registros</div>';
+
+  const leyList = document.getElementById('r_leyList');
+  leyList.innerHTML = '';
+  let total = 0;
+  data.ley1801.forEach(l=>{
+    const cant = Number(l.cantidad||0);
+    total += cant;
+    const row = document.createElement('div');
+    row.className = 'ley-row';
+    row.innerHTML = `<span><span class="swatch"></span> ${l.articulo}</span><span>${String(cant).padStart(2,'0')}</span>`;
+    leyList.appendChild(row);
+  });
+  document.getElementById('r_leyTotal').textContent = `Total ${total} aplicaciones ley 1801`;
+
+  document.getElementById('r_secad').textContent = data.secad || '–';
+  document.getElementById('r_mediacion').textContent = data.mediacion || '–';
+  document.getElementById('r_supervisor').textContent = data.supervisor || '—';
+  document.getElementById('r_cargo').textContent = 'SUPERVISOR DEL SERVICIO';
+}
+
+function cargarHistorial(){
+  const listEl = document.getElementById('historyList');
+  try{
+    const keys = Object.keys(localStorage).filter(k=>k.startsWith('turno:'));
+    if(keys.length===0){
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:12px;">Sin resúmenes guardados</div>';
+      return;
+    }
+    const sorted = keys.sort().reverse();
+    listEl.innerHTML = '';
+    for(const k of sorted){
+      const fecha = k.replace('turno:','');
+      const row = document.createElement('div');
+      row.className = 'hist-item';
+      row.innerHTML = `<span data-fecha="${fecha}">${fecha}</span><span class="del" data-del="${fecha}">✕</span>`;
+      listEl.appendChild(row);
+    }
+    listEl.querySelectorAll('[data-fecha]').forEach(el=>{
+      el.addEventListener('click', ()=> cargarDia(el.dataset.fecha));
+    });
+    listEl.querySelectorAll('[data-del]').forEach(el=>{
+      el.addEventListener('click', (e)=>{ e.stopPropagation(); borrarDia(el.dataset.del); });
+    });
+  }catch(e){
+    listEl.innerHTML = '<div style="color:var(--danger);font-size:12px;">Error cargando historial</div>';
+  }
+}
+
+function cargarDia(fecha){
+  try{
+    const raw = localStorage.getItem('turno:'+fecha);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+
+    document.getElementById('fecha').value = data.fecha;
+    document.getElementById('turno').value = data.turno || 'Tercer Turno';
+    document.getElementById('unidad').value = data.unidad || 'MEMAZ';
+    document.getElementById('secad').value = data.secad || '';
+    document.getElementById('mediacion').value = data.mediacion || '';
+    document.getElementById('supervisor').value = data.supervisor || '';
+
+    document.getElementById('opList').innerHTML = '';
+    document.getElementById('leyList').innerHTML = '';
+    (data.operatividad||[]).forEach(op=> agregarOperatividad(op));
+    (data.ley1801||[]).forEach(l=> agregarLey(l));
+
+    renderReport(data);
+  }catch(e){
+    console.error('No se encontró ese resumen', e);
+  }
+}
+
+function borrarDia(fecha){
+  if(!confirm('¿Borrar el resumen de '+fecha+'?')) return;
+  try{
+    localStorage.removeItem('turno:'+fecha);
+    cargarHistorial();
+  }catch(e){
+    console.error('Error borrando', e);
+  }
+}
+
+function descargarImagen(){
+  const el = document.getElementById('report');
+  if(typeof html2canvas === 'undefined'){ alert('No se pudo cargar la librería para generar la imagen. Verifica tu conexión a internet e intenta de nuevo.'); return; }
+  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  html2canvas(el,{backgroundColor:'#0E3A5E',scale:esIOS?2:3,useCORS:true}).then(canvas=>{
+    canvas.toBlob(async blob=>{
+      const nombreArchivo='resumen_turno_'+(document.getElementById('fecha').value||'sinfecha')+'.png';
+      if(esIOS && navigator.share){
+        try{ const file=new File([blob],nombreArchivo,{type:'image/png'}); if(!navigator.canShare || navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:'Resumen de turno'}); mostrarFeedback('✅ Imagen lista para guardar o enviar.'); return; } }
+        catch(err){ if(err && err.name==='AbortError') return; console.warn('Compartir nativo no disponible:',err); }
+      }
+      const dataUrl=canvas.toDataURL('image/png');
+      if(esIOS){
+        let visor=document.getElementById('visorImagenIOS'); if(visor) visor.remove();
+        visor=document.createElement('div'); visor.id='visorImagenIOS'; visor.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(6,26,19,.98);padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box';
+        const cerrar=document.createElement('button'); cerrar.textContent='✕ Cerrar'; cerrar.style.cssText='position:absolute;top:calc(env(safe-area-inset-top) + 12px);right:14px;background:#D6B36A;color:#0C2A20;border:0;border-radius:8px;padding:9px 13px;font-weight:700;font-size:14px'; cerrar.onclick=()=>visor.remove();
+        const ayuda=document.createElement('div'); ayuda.textContent='Mantén presionada la imagen y selecciona “Guardar en Fotos” o “Guardar imagen”.'; ayuda.style.cssText='color:#F5F3EA;text-align:center;font:600 14px sans-serif;margin:0 8px 14px;';
+        const img=document.createElement('img'); img.src=dataUrl; img.alt='Resumen de turno'; img.style.cssText='max-width:100%;max-height:78vh;width:auto;height:auto;object-fit:contain;border-radius:8px';
+        visor.append(cerrar,ayuda,img); document.body.appendChild(visor); mostrarFeedback('📷 Mantén presionada la imagen para guardarla.');
+      }else{ const link=document.createElement('a'); link.download=nombreArchivo; link.href=dataUrl; document.body.appendChild(link); link.click(); link.remove(); }
+    },'image/png');
+  }).catch(err=>{ console.error('Error generando imagen:',err); alert('No se pudo generar la imagen. Intenta de nuevo o toma una captura de pantalla de la tarjeta.'); });
+}
+
+function copiarWhatsapp(){
+  const turno = document.getElementById('turno').value || 'Turno';
+  const fecha = document.getElementById('fecha').value || '';
+  const unidad = document.getElementById('unidad').value || 'MEMAZ';
+
+  const opTexto = Array.from(document.querySelectorAll('#opList .dyn-item')).map((item,i)=>{
+    const hora = item.querySelector('.op-hora').value;
+    const hecho = item.querySelector('.op-hecho').value;
+    const cai = item.querySelector('.op-cai').value;
+    const patrulla = item.querySelector('.op-patrulla').value;
+    const funcionarios = item.querySelector('.op-funcionarios').value;
+    const partes = [];
+    if(cai) partes.push('CAI '+cai);
+    if(patrulla) partes.push('Patrulla '+patrulla);
+    if(funcionarios) partes.push('Funcionarios: '+funcionarios);
+    const detalleTexto = partes.join(', ');
+    return `${i+1}️⃣${hora}, *${hecho}*. Conoce motivo de policía: ${detalleTexto}`;
+  }).join('\n \n');
+
+  let total = 0;
+  const leyTexto = Array.from(document.querySelectorAll('#leyList .dyn-item')).map(item=>{
+    const art = item.querySelector('.ley-articulo').value;
+    const cant = Number(item.querySelector('.ley-cantidad').value||0);
+    total += cant;
+    return `✅${art} = ${String(cant).padStart(2,'0')}`;
+  }).join('\n');
+
+  const secad = document.getElementById('secad').value || '0';
+  const mediacion = document.getElementById('mediacion').value || '0';
+  const supervisor = document.getElementById('supervisor').value || '';
+
+  const texto =
+`Dios y patria mi Coronel buenas noches respetuosamente envío resumen de ${turno} ${fecha} ${unidad}:
+🟨_*OPERATIVIDAD*_
+${opTexto}
+🟧_*APLICACIÓN LEY 1801*_
+${leyTexto}
+
+*Total ${total} aplicaciones ley 1801*
+               
+🟦Motivos de policía atendidos y registrados en SECAD (${secad})
+🟦Mediación policial (${mediacion})
+${supervisor}
+*SUPERVISOR DEL SERVICIO*`;
+
+  compartirOCopiarTexto(texto);
+}
+
+async function compartirOCopiarTexto(texto){
+  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if(esIOS && navigator.share){
+    try{
+      await navigator.share({ text: texto });
+      mostrarFeedback('✅ Listo para enviar.');
+      return;
+    }catch(err){
+      if(err && err.name === 'AbortError'){ return; }
+      console.warn('Compartir nativo no disponible, usando copiado:', err);
+    }
+  }
+
+  copiarTextoSeguro(texto);
+}
+
+function copiarTextoSeguro(texto){
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(texto).then(()=>{
+      mostrarFeedback('✅ Copiado. Pégalo en WhatsApp.');
+    }).catch(()=>{
+      copiarConFallback(texto);
+    });
+  } else {
+    copiarConFallback(texto);
+  }
+}
+
+function copiarConFallback(texto){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.padding = '0';
+    ta.style.border = 'none';
+    ta.style.outline = 'none';
+    ta.style.boxShadow = 'none';
+    ta.style.background = 'transparent';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+
+    const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if(esIOS){
+      const range = document.createRange();
+      range.selectNodeContents(ta);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      ta.setSelectionRange(0, 999999);
+    } else {
+      ta.focus();
+      ta.select();
+    }
+
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(window.getSelection){ window.getSelection().removeAllRanges(); }
+
+    if(ok){
+      mostrarFeedback('✅ Copiado. Pégalo en WhatsApp.');
+    } else {
+      mostrarFeedback('⚠️ No se pudo copiar automáticamente. Mantén presionado el texto y cópialo manualmente.');
+    }
+  }catch(e){
+    mostrarFeedback('⚠️ No se pudo copiar automáticamente. Mantén presionado el texto y cópialo manualmente.');
+  }
+}
+
+function mostrarFeedback(msg){
+  document.getElementById('copyFeedback').textContent = msg;
+  setTimeout(()=> document.getElementById('copyFeedback').textContent = '', 4000);
+}
+
+document.getElementById('fecha').valueAsDate = new Date();
+agregarOperatividad();
+agregarLey();
+cargarHistorial();
+</script>
+
+</body>
+</html>
